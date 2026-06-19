@@ -1,0 +1,41 @@
+# ── Secrets ── NEVER commit these
+.env
+*.pem
+*.key
+credentials.json
+service-account.json
+secrets/
+*.gpg
+
+# ── Python cache ──
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Virtual environments ──
+venv/
+.venv/
+env/
+.envrc
+
+# ── IDE / editors ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Trading data ──
+data/*.csv
+logs/*.log
+*.db
+*.sqlite3
+
+# ── OS junk ──
+Thumbs.db
+Desktop.ini
