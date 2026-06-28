@@ -1,8 +1,7 @@
 # The Third Fundamental Limit: Self-Referential Systems Cannot Resolve Their Own Inconsistencies
 
 **Author:** longsystems (2026)  
-**DOI:** [pending]  
-**Repository:** github.com/qosu/longsystems-research  
+**Repository:** github.com/qosu/timetravel  
 **Keywords:** self-reference, fixed-point negation, AI alignment, paradox resolution, formal limits
 
 ---
@@ -13,9 +12,9 @@ We prove a third fundamental limit on formal systems, alongside Turing's undecid
 
 The core mechanism is **Fixed-Point Negation (FPN)**: when an event `e` negates a value `v` while transitively depending on `v`, resolution of `e` creates a new event `res_e` that depends on AND negates `e` — the same FPN structure in a 2-node "atomic" form. We prove:
 
-1. **Universality Lemma**: Every grandfather paradox contains FPN by the cycle topology — the negator is in the same cycle as the negated, and the cycle provides the dependency path.
+1. **Lemma U' (Corrected)**: `PURE_FPN ⟹ grandfather paradox`. The converse does not hold: mutual negation cycles are grandfather paradoxes but not PURE_FPN. Resolution always creates PURE_FPN structure regardless of original subtype (Theorem T).
 
-2. **Resolution Escalation Theorem**: The paradox measure π (number of maximal grandfather cycles) is STICTLY INCREASING under resolution. Resolution never reduces paradoxes; it multiplies them.
+2. **Resolution Escalation Theorem**: The paradox measure π (number of maximal grandfather cycles) is STRICTLY INCREASING under resolution. Resolution never reduces paradoxes; it multiplies them.
 
 3. **Inevitable Divergence Theorem**: A reflective system R converges ⇔ R has NO grandfather paradoxes in its initial state. Any internal inconsistency guarantees non-convergence.
 
@@ -68,7 +67,7 @@ But `res_e` now depends on AND negates `e` — the SAME FPN structure. Resolutio
 
 ### 1.4 Contributions
 
-1. **FPN Universality Lemma**: Every grandfather paradox IS an FPN structure. The distinction is moot — by the cycle topology, the negator always transitively depends on the negated. This simplifies and strengthens all subsequent results.
+1. **Lemma U' (dep-only FPN ⟹ grandfather)**: `PURE_FPN` requires a pure dependency path (dep edges only) from negated to negator. Not every grandfather cycle has this — mutual negation is a counterexample. Theorem T shows resolution always produces `PURE_FPN`, giving decidability in O(V+E) for the Axiom-restricted class.
 
 2. **Atomic FPN Lemma**: The 2-node cycle (e ⇄ res_e) is the minimal FPN unit and is UNAVOIDABLE whenever any paradox is resolved.
 
@@ -296,8 +295,8 @@ Just as not every truth is provable, and not every function is computable — no
 
 The theory is implemented as a deterministic time-travel simulation engine (5,734 lines of Python, 19 modules). The complete source code, all proofs, and demonstration scripts are available at:
 
-**Repository:** github.com/qosu/longsystems-research  
-**DOI:** [Zenodo — pending]
+**Repository:** github.com/qosu/timetravel  
+
 
 **Key Modules:**
 - `universe.py` — Deterministic universe with causal events
@@ -305,9 +304,10 @@ The theory is implemented as a deterministic time-travel simulation engine (5,73
 - `novikov.py` — Novikov self-consistency constraint solver
 - `formal_reflection.py` — Abstract reflective system framework
 - `proofs.py` — Phase 2 computational proofs (7/7)
-- `final_proofs.py` — Definitive proofs with Universality Lemma (6/6)
+- `final_proofs.py` — 8 formally verified proofs: Theorem P, Lemma U', Theorem T, Lemma A, Theorem E, Theorem D, Theorem X, Corollary C (8/8)
 - `value_reflection.py` — AI value drift as FPN
 - `safe_modification.py` — Safe modification theorem and protocols
 - `demo_alignment.py` — Three-level demonstration (engine + analysis + LLM)
 
 **All proofs computationally verified against the engine.**
+
