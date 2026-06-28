@@ -78,8 +78,8 @@ class FPNCertificate:
         if self.negated_target not in graph.negates.get(self.event_id, set()):
             return False
 
-        # (2) dependency path: v →* e in combined graph
-        if not graph.has_path(self.negated_target, self.event_id):
+        # (2) dependency path: v ->_dep* e — PURE dep edges only, not G*
+        if not graph.has_dep_path(self.negated_target, self.event_id):
             return False
 
         # (3) cycle exists
@@ -147,9 +147,9 @@ def find_fpn_certificate(graph: CausalGraph) -> Optional[FPNCertificate]:
                 # That is: does the NEGATED target have a dependency
                 # path back to the negator?
 
-                if graph.has_path(dst, src):
-                    # Find the dependency path
-                    path = _find_path(graph, dst, src)
+                if graph.has_dep_path(dst, src):
+                    # Find the pure dependency path (dep edges only)
+                    path = _find_dep_path(graph, dst, src)
                     if path and len(path) >= 2:  # non-trivial path
                         return FPNCertificate(
                             event_id=src,
@@ -162,18 +162,21 @@ def find_fpn_certificate(graph: CausalGraph) -> Optional[FPNCertificate]:
     return None
 
 
-def _find_path(graph: CausalGraph, src: str, dst: str, max_depth: int = 20) -> Optional[list[str]]:
-    """Find a path from src to dst in the combined graph using BFS."""
+def _find_dep_path(graph: CausalGraph, src: str, dst: str, max_depth: int = 20) -> Optional[list[str]]:
+    """
+    Find a pure dependency path from src to dst using BFS — dep edges ONLY.
+
+    Dep edge direction: precondition -> dependent event (cause -> effect).
+    This constructs the witness path for FPN condition (i): v ->_dep* e.
+    """
     from collections import deque
 
-    # Build adjacency: combined graph
+    # Dep-only adjacency: precondition -> {events that depend on it}
     adj: dict[str, set[str]] = {}
     for eid, preconds in graph.depends.items():
         for p in preconds:
             adj.setdefault(p, set()).add(eid)
-    for eid, negs in graph.negates.items():
-        for n in negs:
-            adj.setdefault(eid, set()).add(n)
+    # Negation edges deliberately excluded.
 
     if src not in adj:
         return None

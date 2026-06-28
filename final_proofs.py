@@ -2,18 +2,28 @@
 ═══ DEFINITIVE PROOFS — Computational Self-Reference Theory ═══
 ================================================================
 
-FINAL VERSION — incorporating the Universality Lemma and
-corrected convergence characterization. This document
-supersedes the earlier proofs.py with stronger, more
-rigorous results discovered during the revision phase.
+REVISION 2 (2026-06-21) — Foundational correction applied.
 
-Key correction from Phase 2:
-  Phase 2 assumed some grandfather paradoxes might NOT have FPN.
-  This is FALSE. EVERY grandfather paradox has FPN by definition
-  of the cycle structure. This discovery leads to a stronger
-  and cleaner convergence theorem.
+Error discovered and corrected:
+  Phase 2 used has_path() traversing G* (dep union neg edges) to verify
+  the FPN dependency condition. This made FPN equivalent to grandfather-
+  cycle membership by cycle topology — a tautology, not a theorem.
+  Lemma U was circular.
 
-STATUS: All proofs computationally verified against the engine.
+The fix:
+  has_dep_path() traverses ONLY dependency edges. Under this correct
+  definition, mutual negation (A neg B, B neg A, no dep) is a grandfather
+  cycle that does NOT contain FPN. The original Lemma U is FALSE.
+
+Corrected results:
+  Lemma U  -> REFUTED: mutual negation is an explicit counterexample
+  Lemma U' -> PROVEN: every PURE_FPN is a grandfather (reverse direction)
+  Theorem P -> NEW: grandfather cycles fall into exactly 3 disjoint types
+  Theorem T -> NEW: resolution always produces PURE_FPN (type transformation)
+  Theorem E -> INTACT: escalation follows from Axioms 1+2 for all 3 types
+  Theorem D -> INTACT: divergence follows from escalation
+
+STATUS: All proofs computationally verified. Corrections documented.
 AUTHOR: longsystems (2026)
 """
 
@@ -22,7 +32,7 @@ from typing import Optional
 from collections import deque
 
 from universe import Universe, CausalEvent
-from causality import CausalGraph, ParadoxType, Paradox
+from causality import CausalGraph, ParadoxType, GrandfatherSubtype, Paradox
 from formal_reflection import OrbitClass
 from reflection_bridge import EngineReflectiveSystem
 
@@ -739,6 +749,209 @@ def corollary_ai_alignment_rigorous() -> tuple[bool, str]:
     return all_ok, '\n'.join(lines)
 
 
+
+# ═══════════════════════════════════════════════════════════════
+# PART VII-A — CORRECTED LEMMAS (Revision 2)
+# ═══════════════════════════════════════════════════════════════
+
+def theorem_paradox_typology(
+    graph: CausalGraph,
+) -> tuple[bool, str, dict]:
+    """
+    THEOREM P (PARADOX TYPOLOGY):
+    ==============================
+
+    STATEMENT:
+      Every grandfather cycle belongs to exactly one of three disjoint types:
+
+        TYPE 1 — PURE_FPN:
+          Exists node e in cycle such that:
+            (i)  dep-path v ->_dep* e exists (pure causal reachability, no neg edges)
+            (ii) e negates v
+          The negator causally depends on what it destroys. This is the
+          philosophical core of self-undermining reference.
+
+        TYPE 2 — MUTUAL_NEG:
+          All edges in the cycle are negation edges.
+          No dep-path exists between any two nodes in the cycle.
+          Pure mutual invalidation without causal dependency.
+
+        TYPE 3 — MIXED_NONFPN:
+          The cycle has both dep and neg edges, but no node satisfies
+          TYPE 1 (the dep-path + negation condition is never jointly met).
+
+    PROOF OF EXHAUSTIVENESS AND MUTUAL EXCLUSIVITY:
+      Let C be a grandfather cycle (contains >= 1 negation edge).
+      Partition by whether any (negator, negated) pair has a dep-path:
+        If yes -> TYPE 1 (PURE_FPN).
+        If no:
+          If ALL edges are neg edges -> TYPE 2 (MUTUAL_NEG).
+          Else -> TYPE 3 (MIXED_NONFPN, has some dep edges).
+      Cases are exhaustive and mutually exclusive. QED.
+
+    PROOF OF NON-EMPTINESS (each type is inhabited):
+      TYPE 1: E dep V, E neg V -> PURE_FPN.
+      TYPE 2: A neg B, B neg A, no deps -> MUTUAL_NEG.
+      TYPE 3: X neg Y, Z dep Y, Z neg X -> MIXED_NONFPN.
+              dep-path Y->X: False. dep-path X->Z: False. QED.
+
+    SIGNIFICANCE:
+      The original Lemma U asserted that TYPE 1 = all grandfather cycles.
+      This theorem proves three distinct types exist, refuting Lemma U.
+    """
+    paradoxes = graph.detect_paradoxes()
+    gf = [p for p in paradoxes if p.ptype == ParadoxType.GRANDFATHER]
+
+    counts = {s: 0 for s in GrandfatherSubtype}
+    for p in gf:
+        if p.fpn_subtype:
+            counts[p.fpn_subtype] += 1
+
+    verified = all(p.fpn_subtype is not None for p in gf)
+    lines = [
+        "THEOREM P: PARADOX TYPOLOGY",
+        f"  Total grandfather cycles: {len(gf)}",
+        f"  PURE_FPN     (type 1): {counts[GrandfatherSubtype.PURE_FPN]}",
+        f"  MUTUAL_NEG   (type 2): {counts[GrandfatherSubtype.MUTUAL_NEG]}",
+        f"  MIXED_NONFPN (type 3): {counts[GrandfatherSubtype.MIXED]}",
+        f"  {'OK: all classified' if verified else 'ERROR: unclassified cycles'}",
+    ]
+    return verified, chr(10).join(lines), counts
+
+
+def lemma_u_prime_fpn_implies_grandfather(
+    graph: CausalGraph,
+) -> tuple[bool, str]:
+    """
+    LEMMA U' (CORRECTED DIRECTION: PURE_FPN => GRANDFATHER):
+    =========================================================
+
+    STATEMENT:
+      If a cycle contains a PURE_FPN node (dep-path v ->* e, e negates v),
+      then it is a grandfather cycle. The converse does NOT hold in general.
+
+    PROOF (positive direction):
+      Given dep-path v ->_dep* e and e negates v.
+      In G*: the dep-path v -> ... -> e exists (dep edges are in G*).
+             The edge e -> v (negation) also exists in G*.
+      Together: cycle v -> ... -> e -> v in G* with neg edge e->v.
+      By definition: grandfather cycle. QED.
+
+    PROOF OF COUNTEREXAMPLE (converse fails):
+      Mutual negation: A negates B, B negates A, no dep edges.
+        Is grandfather? Yes (cycle (A,B) in G* with neg edges A->B, B->A).
+        has_dep_path(B, A)? False (no dep edges from B).
+        has_dep_path(A, B)? False (no dep edges from A).
+        => NOT PURE_FPN. Lemma U (original direction) is FALSE. QED.
+
+    COMPUTATIONAL VERIFICATION:
+    """
+    from universe import CausalEvent as CE
+    mk = lambda eid, pr, ne: CE(eid, 0, tuple(pr), tuple(ne), 'test', ())
+
+    # Counterexample: mutual negation
+    ce = CausalGraph.from_history([mk('MN_A', [], ['MN_B']), mk('MN_B', [], ['MN_A'])])
+    ce_gf = [p for p in ce.detect_paradoxes() if p.ptype == ParadoxType.GRANDFATHER]
+    ce_is_gf = len(ce_gf) > 0
+    ce_is_fpn = any(p.fpn_subtype == GrandfatherSubtype.PURE_FPN for p in ce_gf)
+
+    counterexample_valid = ce_is_gf and not ce_is_fpn
+
+    # Positive direction
+    fpn_g = CausalGraph.from_history([mk('FV', [], []), mk('FE', ['FV'], ['FV'])])
+    fpn_gf = [p for p in fpn_g.detect_paradoxes() if p.ptype == ParadoxType.GRANDFATHER]
+    positive_ok = any(p.fpn_subtype == GrandfatherSubtype.PURE_FPN for p in fpn_gf)
+
+    all_ok = counterexample_valid and positive_ok
+    lines = [
+        "LEMMA U' (PURE_FPN => GRANDFATHER, converse fails)",
+        "",
+        "  Counterexample to original Lemma U:",
+        f"    Mutual negation (A neg B, B neg A, no deps):",
+        f"      Is grandfather? {'YES' if ce_is_gf else 'NO'}",
+        f"      Is PURE_FPN?    {'YES' if ce_is_fpn else 'NO  <- COUNTEREXAMPLE'}",
+        f"      dep_path A->B: {ce.has_dep_path('MN_A','MN_B')}",
+        f"      dep_path B->A: {ce.has_dep_path('MN_B','MN_A')}",
+        "",
+        "  Positive direction (PURE_FPN => grandfather):",
+        f"    E dep V, E neg V -> grandfather? {'YES' if len(fpn_gf) > 0 else 'NO'}",
+        f"    Subtype PURE_FPN? {'YES' if positive_ok else 'NO'}",
+        "",
+        f"  {'OK: Lemma U refuted, Lemma U-prime holds' if all_ok else 'CHECK FAILED'}",
+    ]
+    return all_ok, chr(10).join(lines)
+
+
+def theorem_type_transformation() -> tuple[bool, str]:
+    """
+    THEOREM T (RESOLUTION TYPE TRANSFORMATION):
+    =============================================
+
+    STATEMENT:
+      Under Axioms 1+2, any resolution step on ANY grandfather cycle
+      (regardless of subtype) creates a new PURE_FPN cycle.
+
+    PROOF:
+      Let C be any grandfather cycle. Let e be any node in C.
+      By Axiom 2 (Self-Referential Closure), resolution adds res_e where:
+        res_e.preconditions = {e}   (dep edge: e ->_dep res_e)
+        res_e.negations     = {e}   (neg edge: res_e -neg-> e)
+
+      Check PURE_FPN(res_e, e):
+        (i)  dep-path e ->_dep* res_e? YES: direct dep edge e -> res_e.
+        (ii) res_e negates e?          YES: by construction.
+      Therefore PURE_FPN(res_e, e) holds. QED.
+
+    COROLLARY:
+      Even if the initial inconsistency is TYPE 2 (mutual negation,
+      softly resolvable in principle), the act of self-resolution under
+      Axiom 2 converts the problem into TYPE 1 (PURE_FPN, hardest type).
+      Self-resolution makes things strictly worse in terms of paradox type.
+
+    COMPUTATIONAL VERIFICATION:
+    """
+    from universe import CausalEvent as CE
+    mk = lambda eid, pr, ne: CE(eid, 0, tuple(pr), tuple(ne), 'test', ())
+
+    # Start with mutual negation (TYPE 2)
+    mn_graph = CausalGraph.from_history([mk('A', [], ['B']), mk('B', [], ['A'])])
+    pre_gf = [p for p in mn_graph.detect_paradoxes() if p.ptype == ParadoxType.GRANDFATHER]
+    pre_type2 = any(p.fpn_subtype == GrandfatherSubtype.MUTUAL_NEG for p in pre_gf)
+
+    # Simulate resolution: add res_A with preconds={A}, negations={A}
+    res_graph = CausalGraph.from_history([
+        mk('A', [], ['B']),
+        mk('B', [], ['A']),
+        mk('res_A', ['A'], ['A']),  # resolution event
+    ])
+    post_gf = [p for p in res_graph.detect_paradoxes() if p.ptype == ParadoxType.GRANDFATHER]
+    post_has_fpn = any(p.fpn_subtype == GrandfatherSubtype.PURE_FPN for p in post_gf)
+
+    # Verify: res_A has dep-path from A and negates A
+    dep_ok = res_graph.has_dep_path('A', 'res_A')
+    neg_ok = 'A' in res_graph.negates.get('res_A', set())
+
+    all_ok = pre_type2 and post_has_fpn and dep_ok and neg_ok
+    lines = [
+        "THEOREM T: RESOLUTION TYPE TRANSFORMATION",
+        "",
+        f"  Pre-resolution (mutual negation):",
+        f"    Type 2 (MUTUAL_NEG) present? {'YES' if pre_type2 else 'NO'}",
+        "",
+        f"  Post-resolution (after adding res_A):",
+        f"    dep-path A -> res_A: {dep_ok}",
+        f"    res_A negates A:     {neg_ok}",
+        f"    PURE_FPN now present? {'YES' if post_has_fpn else 'NO'}",
+        "",
+        f"  {'OK: resolution always upgrades to PURE_FPN' if all_ok else 'CHECK FAILED'}",
+        "",
+        "  IMPLICATION: Even Type 2 (mutual neg, no causal dependency)",
+        "  becomes Type 1 (PURE_FPN) after one self-resolution step.",
+        "  Self-resolution cannot simplify the paradox — only worsen it.",
+    ]
+    return all_ok, chr(10).join(lines)
+
+
 # ═══════════════════════════════════════════════════════════════
 # PART VII — GRAND VERIFICATION
 # ═══════════════════════════════════════════════════════════════
@@ -768,12 +981,26 @@ def verify_all():
     print("╚" + "═" * 64 + "╝")
     print()
 
-    # Lemma U
-    print("─── Lemma U: FPN Universality ───")
+    # Theorem P (Paradox Typology — replaces old Lemma U)
+    print("─── Theorem P: Paradox Typology ───")
     g = make_gf_graph()
-    ok, report, ev = lemma_universality_all_grandfather_cycles_have_fpn(g)
-    print(report)
-    results['Lemma U (Universality)'] = ok
+    ok_p, rep_p, counts_p = theorem_paradox_typology(g)
+    print(rep_p)
+    results['Theorem P (Typology)'] = ok_p
+    print()
+
+    # Lemma U' (corrected direction — PURE_FPN => grandfather)
+    print("─── Lemma U\': FPN => Grandfather (corrected) ───")
+    ok_u2, rep_u2 = lemma_u_prime_fpn_implies_grandfather(make_gf_graph())
+    print(rep_u2)
+    results["Lemma U' (Corrected)"] = ok_u2
+    print()
+
+    # Theorem T (Type Transformation under resolution)
+    print("─── Theorem T: Resolution Type Transformation ───")
+    ok_t, rep_t = theorem_type_transformation()
+    print(rep_t)
+    results['Theorem T (Transformation)'] = ok_t
     print()
 
     # Lemma A
